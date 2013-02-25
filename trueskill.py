@@ -54,20 +54,20 @@ class Gaussian(object):
   """
   Object representing a gaussian distribution.  Create as:
 
-    Gaussian(mu=..., sigma=...)
+    Gaussian({mu=..., sigma=...})
       or
-    Gaussian(pi=..., tau=...)
+    Gaussian({pi=..., tau=...})
       or
     Gaussian()    # gives 0 mean, infinite sigma
   """
 
-  def __init__(self, mu=None, sigma=None, pi=None, tau=None):
-    if pi is not None:
-      self.pi = pi
-      self.tau = tau
-    elif mu is not None:
-      self.pi = pow(sigma , -2)
-      self.tau = self.pi * mu
+  def __init__(self, parms={}):
+    if "pi" in parms:
+      self.pi = parms["pi"]
+      self.tau = parms["tau"]
+    elif "mu" in parms:
+      self.pi = pow(parms["sigma"] , -2)
+      self.tau = self.pi * parms["mu"]
     else:
       self.pi = 0
       self.tau = 0
@@ -92,10 +92,10 @@ class Gaussian(object):
 
 
   def mul(self, other):
-    return Gaussian(pi=self.pi+other.pi, tau=self.tau+other.tau)
+    return Gaussian({"pi":self.pi+other.pi, "tau":self.tau+other.tau})
 
   def div(self, other):
-    return Gaussian(pi=self.pi-other.pi, tau=self.tau-other.tau)
+    return Gaussian({"pi":self.pi-other.pi, "tau":self.tau-other.tau})
 
 class Variable(object):
   """ A variable node in the factor graph. """
@@ -156,8 +156,7 @@ class LikelihoodFactor(Factor):
     y = self.mean.value
     fy = self.mean.GetMessage(self)
     a = 1.0 / (1.0 + self.variance * (y.pi - fy.pi))
-    self.value.UpdateMessage(self, Gaussian(pi=a*(y.pi - fy.pi),
-                                            tau=a*(y.tau - fy.tau)))
+    self.value.UpdateMessage(self, Gaussian({"pi":a*(y.pi - fy.pi), "tau":a*(y.tau - fy.tau)}))
 
   def UpdateMean(self):
     """ Update the mean after a change in the value (going "up" in
@@ -168,8 +167,7 @@ class LikelihoodFactor(Factor):
     x = self.value.value
     fx = self.value.GetMessage(self)
     a = 1.0 / (1.0 + self.variance * (x.pi - fx.pi))
-    self.mean.UpdateMessage(self, Gaussian(pi=a*(x.pi - fx.pi),
-                                           tau=a*(x.tau - fx.tau)))
+    self.mean.UpdateMessage(self, Gaussian({"pi":a*(x.pi - fx.pi),"tau":a*(x.tau - fx.tau)}))
 
 class SumFactor(Factor):
   """ A factor that connects a sum variable with 1 or more terms,
@@ -188,7 +186,7 @@ class SumFactor(Factor):
     new_tau = new_pi * sum(a[j] *
                            (y[j].tau - fy[j].tau) / (y[j].pi - fy[j].pi)
                            for j in range(len(a)))
-    var.UpdateMessage(self, Gaussian(pi=new_pi, tau=new_tau))
+    var.UpdateMessage(self, Gaussian({"pi":new_pi, "tau":new_tau}))
 
   def UpdateSum(self):
     """ Update the sum value ("down" in the factor graph). """
@@ -244,7 +242,7 @@ class TruncateFactor(Factor):
     args = (d / sqrt_c, self.epsilon * sqrt_c)
     V = self.V(*args)
     W = self.W(*args)
-    new_val = Gaussian(pi=c / (1.0 - W), tau=(d + sqrt_c * V) / (1.0 - W))
+    new_val = Gaussian({"pi":c / (1.0 - W), "tau":(d + sqrt_c * V) / (1.0 - W)})
     self.var.UpdateValue(self, new_val)
 
 
@@ -340,8 +338,7 @@ def AdjustPlayers(players):
 
   # Create each layer of factor nodes.  At the top we have priors
   # initialized to the player's current skill estimate.
-  skill = [PriorFactor(s, Gaussian(mu=pl.skill[0],
-                                   sigma=pl.skill[1] + GAMMA))
+  skill = [PriorFactor(s, Gaussian({"mu":pl.skill[0], "sigma":pl.skill[1] + GAMMA}))
            for (s, pl) in zip(ss, players)]
   skill_to_perf = [LikelihoodFactor(s, p, pow(BETA,2))
                    for (s, p) in zip(ss, ps)]
