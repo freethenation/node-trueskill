@@ -311,6 +311,7 @@ AdjustPlayers=(players)->
     f.UpdateMean()
   # Finally, the players' new skills are the new values of the s
   # variables.
+  #console.log require('util').inspect(ss, true, 10, true)
   for i in zip({s:ss, pl:players})
     i.pl.skill = i.s.value.MuSigma()
   return
