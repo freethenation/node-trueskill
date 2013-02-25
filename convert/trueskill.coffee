@@ -192,8 +192,8 @@ class TruncateFactor extends Factor
     d = x.tau - fx.tau
     sqrt_c = sqrt(c)
     args = [d / sqrt_c, @epsilon * sqrt_c]
-    V = @V.apply(this,Array.prototype.slice.call(args, 0))
-    W = @W.apply(this,Array.prototype.slice.call(args, 0))
+    V = @V.apply(this,args)
+    W = @W.apply(this,args)
     new_val = new Gaussian({"pi":c / (1.0 - W), "tau":(d + sqrt_c * V) / (1.0 - W)})
     @var.UpdateValue(this, new_val)
 DrawProbability=(epsilon, beta, total_players=2)->
@@ -309,7 +309,6 @@ AdjustPlayers=(players)->
     f.UpdateMean()
   # Finally, the players' new skills are the new values of the s
   # variables.
-  #console.log require('util').inspect(ss, true, 10, true)
   for i in zip({s:ss, pl:players})
     i.pl.skill = i.s.value.MuSigma()
   return
