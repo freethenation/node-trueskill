@@ -1,30 +1,33 @@
-#!/usr/bin/python
-# Copyright 2010 Doug Zongker
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-#  Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 ###
 Implements the player skill estimation algorithm from Herbrich et al.,
 "TrueSkill(TM): A Bayesian Skill Rating System".
 ###
-from __future__ import print_function
-__author__ = "Doug Zongker <dougz@isotropic.org>"
-import sys
-if sys.hexversion < 0x02060000
-  print("requires Python 2.6 or higher")
-  sys.exit(1)
-from scipy.stats.distributions import norm as scipy_norm
-sqrt = Math.
-norm = scipy_norm()
+#define a bunch of python methods for JavaScript
+sqrt = Math.sqrt
+pow = Math.pow
+len=(obj)->obj.length
+range=(max)->[0...max]
+reduce=(list, iterator, memo)->
+    for i in list
+        memo = iterator(memo, i)
+    return memo
+sum=(list)->reduce(list,((i,j)->i+j),0)
+map=(list, func)->(func(i) for i in list)
+zip=(items)->
+    minLength = reduce((v for k,v of items), ((memo,arr)->Math.min(memo,arr.length)), Number.MAX_VALUE)
+    return map([0...minLength],(index)->
+        item = {}
+        for key, value of items
+            item[key]=value[index]
+        return item
+    )
+genId=(()->
+  currId=-1
+  ()->currId++; return currId
+)()
+#start of original code
+norm = require("gaussian")
+norm = norm(0,1)
 pdf = norm.pdf
 cdf = norm.cdf
 icdf = norm.ppf    # inverse CDF
@@ -48,30 +51,23 @@ class Gaussian
     new Gaussian()    # gives 0 mean, infinite sigma
   ###
   constructor:(parms={})->
-    if "pi" in parms
+    @id = genId()
+    if parms.pi
       @pi = parms["pi"]
       @tau = parms["tau"]
-    else if "mu" in parms
+    else if parms.mu
       @pi = pow(parms["sigma"] , -2)
       @tau = @pi * parms["mu"]
     else
       @pi = 0
       @tau = 0
-  repr:()->
-    return "N(pi={0.pi},tau={0.tau})".format(this)
-  toString:()->
-    if @pi == 0.0
-      return "N(mu=0,sigma=inf)"
-    else
-      sigma = sqrt(1/@pi)
-      mu = @tau / @pi
-      return "N(mu={0:.3f},sigma={1:.3f})".format(mu, sigma)
+  toString:()->"Gaussian_#{@id}"
   MuSigma:()->
     ### Return the value of this object as a (mu, sigma) tuple. ###
     if @pi == 0.0
-      return 0, float("inf")
+      return [0, Infinity]
     else
-      return @tau / @pi, sqrt(1/@pi)
+      return [@tau / @pi, sqrt(1/@pi)]
   mul:(other)->
     return new Gaussian({"pi":@pi+other.pi, "tau":@tau+other.tau})
   div:(other)->
@@ -96,9 +92,12 @@ class Variable
 class Factor
   ### Base class for a factor node in the factor graph. ###
   constructor:(variables)->
+    @id = genId()
     @variables = variables
     for v in variables
       v.AttachFactor(this)
+  toString:()->"Factor_#{@id}"
+
 # The following Factor classes implement the five update equations
 # from Table 1 of the Herbrich et al. paper.
 class PriorFactor extends Factor
@@ -138,23 +137,24 @@ class SumFactor extends Factor
   which are summed after being multiplied by fixed (real)
   coefficients. ###
   constructor:(sum_variable, terms_variables, coeffs)->
-    assert len(terms_variables) == len(coeffs)
+    if len(terms_variables) != len(coeffs) then throw new Error "assert error"
     @sum = sum_variable
     @terms = terms_variables
     @coeffs = coeffs
-    super([sum_variable] + terms_variables)
-  _InternalUpdate:(var, y, fy, a)->
-    new_pi = 1.0 / (sum(pow(a[j],2) / (y[j].pi - fy[j].pi) for j in range(len(a))))
-    new_tau = new_pi * sum(a[j] *
-                           (y[j].tau - fy[j].tau) / (y[j].pi - fy[j].pi)
-                           for j in range(len(a)))
-    var.UpdateMessage(this, new Gaussian({"pi":new_pi, "tau":new_tau}))
+    super([sum_variable].concat(terms_variables))
+  _InternalUpdate:(variable, y, fy, a)->
+    new_pi = map(range(len(a)), (j)->pow(a[j],2) / (y[j].pi - fy[j].pi))
+    new_pi = 1.0 / sum(new_pi)
+    new_tau = new_pi * sum(a[j] * (y[j].tau - fy[j].tau) / (y[j].pi - fy[j].pi) for j in range(len(a)))
+    variable.UpdateMessage(this, new Gaussian({"pi":new_pi, "tau":new_tau}))
+    return
   UpdateSum:()->
     ### Update the sum value ("down" in the factor graph). ###
-    y = [t.value for t in @terms]
-    fy = [t.GetMessage(this) for t in @terms]
+    y = (t.value for t in @terms)
+    fy = (t.GetMessage(this) for t in @terms)
     a = @coeffs
     @_InternalUpdate(@sum, y, fy, a)
+    return
   UpdateTerm:(index)->
     ### Update one of the term values ("up" in the factor graph). ###
     # Swap the coefficients around to make the term we want to update
@@ -169,12 +169,12 @@ class SumFactor extends Factor
     #
     # then use the same update equation as for UpdateSum.
     b = @coeffs
-    a = [-b[i] / b[index] for i in range(len(b)) if i != index]
-    a.insert(index, 1.0 / b[index])
+    a = ((-b[i] / b[index]) for i in range(len(b)) when i != index)
+    a.splice(index, 0, 1.0 / b[index])
     v = @terms.slice(0)
     v[index] = @sum
-    y = [i.value for i in v]
-    fy = [i.GetMessage(this) for i in v]
+    y = (i.value for i in v)
+    fy = (i.GetMessage(this) for i in v)
     @_InternalUpdate(@terms[index], y, fy, a)
 class TruncateFactor extends Factor
   ### A factor for (approximately) truncating the team difference
@@ -192,9 +192,9 @@ class TruncateFactor extends Factor
     c = x.pi - fx.pi
     d = x.tau - fx.tau
     sqrt_c = sqrt(c)
-    args = (d / sqrt_c, @epsilon * sqrt_c)
-    V = @V(*args)
-    W = @W(*args)
+    args = [d / sqrt_c, @epsilon * sqrt_c]
+    V = @V.apply(@V,Array.prototype.slice.call(arguments, 0))
+    W = @W.apply(@W,Array.prototype.slice.call(arguments, 0))
     new_val = new Gaussian({"pi":c / (1.0 - W), "tau":(d + sqrt_c * V) / (1.0 - W)})
     @var.UpdateValue(this, new_val)
 DrawProbability=(epsilon, beta, total_players=2)->
@@ -205,8 +205,10 @@ DrawMargin=(p, beta, total_players=2)->
   return icdf((p+1.0)/2) * sqrt(total_players) * beta
 INITIAL_MU = 25.0
 INITIAL_SIGMA = INITIAL_MU / 3.0
-def SetParameters(beta=null, epsilon=null, draw_probability=null,
-                  gamma=null):
+BETA = null
+EPSILON = null
+GAMMA = null
+SetParameters=(beta=null, epsilon=null, draw_probability=null, gamma=null)->
   ###
   Sets three global parameters used in the TrueSkill algorithm.
   beta is a measure of how random the game is.  You can think of it as
@@ -229,7 +231,6 @@ def SetParameters(beta=null, epsilon=null, draw_probability=null,
   on the estimate will slowly disappear unless reinforced by evidence
   from new games.
   ###
-  global BETA, EPSILON, GAMMA
   if beta is null
     BETA = INITIAL_SIGMA / 2.0
   else
@@ -260,29 +261,25 @@ AdjustPlayers=(players)->
   players = players.slice(0)
   # Sort players by rank, the factor graph will connect adjacent team
   # performance variables.
-  players.sort(key=lambda p: p.rank)
+  players.sort((p)->p.rank)
   # Create all the variable nodes in the graph.  "Teams" are each a
   # single player; there's a one-to-one correspondence between players
   # and teams.  (It would be straightforward to make multiplayer
   # teams, but it's not needed for my current purposes.)
-  ss = [new Variable() for p in players]
-  ps = [new Variable() for p in players]
-  ts = [new Variable() for p in players]
-  ds = [new Variable() for p in players.slice(0,-1)]
+  ss = (new Variable() for p in players)
+  console.log ss
+  ps = (new Variable() for p in players)
+  ts = (new Variable() for p in players)
+  ds = (new Variable() for p in players.slice(0,-1))
   # Create each layer of factor nodes.  At the top we have priors
   # initialized to the player's current skill estimate.
-  skill = [new PriorFactor(s, new Gaussian({"mu":pl.skill[0], "sigma":pl.skill[1] + GAMMA}))
-           for (s, pl) in zip(ss, players)]
-  skill_to_perf = [new LikelihoodFactor(s, p, pow(BETA,2)) for (s, p) in zip(ss, ps)]
-  perf_to_team = [new SumFactor(t, [p], [1]) for (p, t) in zip(ps, ts)]
-  team_diff = [new SumFactor(d, [t1, t2], [+1, -1]) for (d, t1, t2) in zip(ds, ts.slice(0,-1), ts.slice(1))]
+  skill = (new PriorFactor(i.s, new Gaussian({"mu":i.pl.skill[0], "sigma":i.pl.skill[1] + GAMMA})) for i in zip({s:ss, pl:players}))
+  skill_to_perf = (new LikelihoodFactor(i.s, i.p, pow(BETA,2)) for i in zip({s:ss, p:ps}))
+  perf_to_team = (new SumFactor(i.t, [i.p], [1]) for i in zip({p:ps, t:ts}))
+  team_diff = (new SumFactor(i.d, [i.t1, i.t2], [+1, -1]) for i in zip({d:ds, t1:ts.slice(0,-1), t2:ts.slice(1)}))
   # At the bottom we connect adjacent teams with a 'win' or 'draw'
   # factor, as determined by the rank values.
-  trunc = [new TruncateFactor(d,
-                          Vdraw if pl1.rank == pl2.rank else Vwin,
-                          Wdraw if pl1.rank == pl2.rank else Wwin,
-                          EPSILON)
-           for (d, pl1, pl2) in zip(ds, players.slice(0,-1), players.slice(1))]
+  trunc = (new TruncateFactor(i.d, (if i.pl1.rank == i.pl2.rank then Vdraw else Vwin), (if i.pl1.rank == i.pl2.rank then Wdraw else Wwin), EPSILON) for i in zip({d:ds, pl1:players.slice(0,-1), pl2:players.slice(1)}))
   # Start evaluating the graph by pushing messages 'down' from the
   # priors.
   for f in skill
@@ -314,6 +311,12 @@ AdjustPlayers=(players)->
     f.UpdateMean()
   # Finally, the players' new skills are the new values of the s
   # variables.
-  for s, pl in zip(ss, players)
-    pl.skill = s.value.MuSigma()
-__all__ = ["AdjustPlayers", "SetParameters", "INITIAL_MU", "INITIAL_SIGMA"]
+  for i in zip({s:ss, pl:players})
+    i.pl.skill = i.s.value.MuSigma()
+  return
+
+#export methods
+exports.AdjustPlayers= AdjustPlayers
+exports.SetParameters = SetParameters
+exports.SetInitialMu = (val)->INITIAL_MU=val
+exports.SetInitialSigma = (val)->INITIAL_SIGMA=val
