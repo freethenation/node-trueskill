@@ -3,7 +3,7 @@ childProcess = require 'child_process'
 rnd=(min, max)->Math.floor(Math.random() * (max - min + 1)) + min;
 
 createPlayers=()->
-    numPlayers = rnd(2,15)
+    numPlayers = rnd(2,10)
     defaultSkill = rnd(1,100)
     players = []
     for i in [0...numPlayers] by 1
@@ -16,7 +16,7 @@ setRanks=(players)->
 
 checkEqual=(players1, players2)->
     if players1.length != players2.length then throw new Error "player arrrays not same length"
-    for i in [0...players.length]
+    for i in [0...players1.length]
         if Math.abs(players1[i].skill[0] - players2[i].skill[0]) > .001 then throw "python and coffescript dont agree"
         if Math.abs(players1[i].skill[1] - players2[i].skill[1]) > .001 then throw "python and coffescript dont agree"
 
