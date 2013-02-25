@@ -40,8 +40,8 @@ runTest=()->
                 console.log('Error code: '+error.code)
                 console.log('Signal received: '+error.signal)
             playersPy = JSON.parse(stdout)
-            playersJs.sort((i)->i.id)
-            playersPy.sort((i)->i.id)
+            playersJs.sort((a,b)->a.id - b.id)
+            playersPy.sort((a,b)->a.id - b.id)
             console.log "orig"
             console.log players
             console.log "js"

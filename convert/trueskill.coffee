@@ -51,7 +51,6 @@ class Gaussian
     new Gaussian()    # gives 0 mean, infinite sigma
   ###
   constructor:(parms={})->
-    @id = genId()
     if parms.pi != undefined
       @pi = parms["pi"]
       @tau = parms["tau"]
@@ -62,7 +61,6 @@ class Gaussian
       @pi = 0
       @tau = 0
     if isNaN(@pi) || isNaN(@tau) then throw new Error "Gaussian parms can not be NaN"
-  toString:()->"Gaussian_#{@id}"
   MuSigma:()->
     ### Return the value of this object as a (mu, sigma) tuple. ###
     if @pi == 0.0
@@ -262,7 +260,7 @@ AdjustPlayers=(players)->
   players = players.slice(0)
   # Sort players by rank, the factor graph will connect adjacent team
   # performance variables.
-  players.sort((p)->p.rank)
+  players.sort((a,b)->a.rank-b.rank)
   # Create all the variable nodes in the graph.  "Teams" are each a
   # single player; there's a one-to-one correspondence between players
   # and teams.  (It would be straightforward to make multiplayer
