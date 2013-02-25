@@ -52,15 +52,16 @@ class Gaussian
   ###
   constructor:(parms={})->
     @id = genId()
-    if parms.pi
+    if parms.pi != undefined
       @pi = parms["pi"]
       @tau = parms["tau"]
-    else if parms.mu
+    else if parms.mu != undefined
       @pi = pow(parms["sigma"] , -2)
       @tau = @pi * parms["mu"]
     else
       @pi = 0
       @tau = 0
+    if isNaN(@pi) || isNaN(@tau) then throw new Error "Gaussian parms can not be NaN"
   toString:()->"Gaussian_#{@id}"
   MuSigma:()->
     ### Return the value of this object as a (mu, sigma) tuple. ###
@@ -193,8 +194,8 @@ class TruncateFactor extends Factor
     d = x.tau - fx.tau
     sqrt_c = sqrt(c)
     args = [d / sqrt_c, @epsilon * sqrt_c]
-    V = @V.apply(@V,Array.prototype.slice.call(arguments, 0))
-    W = @W.apply(@W,Array.prototype.slice.call(arguments, 0))
+    V = @V.apply(this,Array.prototype.slice.call(args, 0))
+    W = @W.apply(this,Array.prototype.slice.call(args, 0))
     new_val = new Gaussian({"pi":c / (1.0 - W), "tau":(d + sqrt_c * V) / (1.0 - W)})
     @var.UpdateValue(this, new_val)
 DrawProbability=(epsilon, beta, total_players=2)->
@@ -267,7 +268,6 @@ AdjustPlayers=(players)->
   # and teams.  (It would be straightforward to make multiplayer
   # teams, but it's not needed for my current purposes.)
   ss = (new Variable() for p in players)
-  console.log ss
   ps = (new Variable() for p in players)
   ts = (new Variable() for p in players)
   ds = (new Variable() for p in players.slice(0,-1))
@@ -311,6 +311,7 @@ AdjustPlayers=(players)->
     f.UpdateMean()
   # Finally, the players' new skills are the new values of the s
   # variables.
+  #console.log require('util').inspect(ss, true, 10, true)
   for i in zip({s:ss, pl:players})
     i.pl.skill = i.s.value.MuSigma()
   return
