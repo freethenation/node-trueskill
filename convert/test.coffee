@@ -40,8 +40,6 @@ runTest=()->
                 console.log('Error code: '+error.code)
                 console.log('Signal received: '+error.signal)
             playersPy = JSON.parse(stdout)
-            playersJs.sort((a,b)->a.id - b.id)
-            playersPy.sort((a,b)->a.id - b.id)
             console.log "orig"
             console.log players
             console.log "js"
@@ -50,5 +48,6 @@ runTest=()->
             console.log playersPy
             checkEqual(playersJs,playersPy)
             runTest()
+            players = playersJs
     )
 runTest()
