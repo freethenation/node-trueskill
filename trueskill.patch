@@ -1,0 +1,165 @@
+1,14d0
+< #!/usr/bin/python
+< # Copyright 2010 Doug Zongker
+< #
+< # Licensed under the Apache License, Version 2.0 (the "License");
+< # you may not use this file except in compliance with the License.
+< # You may obtain a copy of the License at
+< #
+< #      http://www.apache.org/licenses/LICENSE-2.0
+< #
+< #  Unless required by applicable law or agreed to in writing, software
+< # distributed under the License is distributed on an "AS IS" BASIS,
+< # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+< # See the License for the specific language governing permissions and
+< # limitations under the License.
+19,27c5,26
+< from __future__ import print_function
+< __author__ = "Doug Zongker <dougz@isotropic.org>"
+< import sys
+< if sys.hexversion < 0x02060000
+<   print("requires Python 2.6 or higher")
+<   sys.exit(1)
+< from scipy.stats.distributions import norm as scipy_norm
+< from math import sqrt
+< norm = scipy_norm()
+---
+> #define a bunch of python methods for JavaScript
+> sqrt = Math.sqrt
+> pow = Math.pow
+> len=(obj)->obj.length
+> range=(max)->[0...max]
+> reduce=(list, iterator, memo)->
+>     for i in list
+>         memo = iterator(memo, i)
+>     return memo
+> sum=(list)->reduce(list,((i,j)->i+j),0)
+> map=(list, func)->(func(i) for i in list)
+> zip=(items)->
+>     minLength = reduce((v for k,v of items), ((memo,arr)->Math.min(memo,arr.length)), Number.MAX_VALUE)
+>     return map([0...minLength],(index)->
+>         item = {}
+>         for key, value of items
+>             item[key]=value[index]
+>         return item
+>     )
+> #start of original code
+> norm = require("gaussian")
+> norm = norm(0,1)
+40a40
+> gaussianId = 0
+50a51,52
+>     @id = gaussianId
+>     gaussianId++
+60,68c62
+<   repr:()->
+<     return "N(pi={0.pi},tau={0.tau})".format(this)
+<   toString:()->
+<     if @pi == 0.0
+<       return "N(mu=0,sigma=inf)"
+<     else
+<       sigma = sqrt(1/@pi)
+<       mu = @tau / @pi
+<       return "N(mu={0:.3f},sigma={1:.3f})".format(mu, sigma)
+---
+>   toString:()->"Gaussian_#{@id}"
+72c66
+<       return 0, float("inf")
+---
+>       return [0, Infinity]
+74c68
+<       return @tau / @pi, sqrt(1/@pi)
+---
+>       return [@tau / @pi, sqrt(1/@pi)]
+141c135
+<     assert len(terms_variables) == len(coeffs)
+---
+>     if len(terms_variables) != len(coeffs) then throw new Error "assert error"
+145c139
+<     super([sum_variable] + terms_variables)
+---
+>     super([sum_variable].concat(terms_variables))
+147c141,142
+<     new_pi = 1.0 / (sum(pow(a[j],2) / (y[j].pi - fy[j].pi) for j in range(len(a))))
+---
+>     new_pi = map(range(len(a)), (j)->pow(a[j],2) / (y[j].pi - fy[j].pi))
+>     new_pi = 1.0 / sum(new_pi)
+149a145
+>     return
+152,153c148,149
+<     y = [t.value for t in @terms]
+<     fy = [t.GetMessage(this) for t in @terms]
+---
+>     y = (t.value for t in @terms)
+>     fy = (t.GetMessage(this) for t in @terms)
+155a152
+>     return
+170,171c167,168
+<     a = [-b[i] / b[index] for i in range(len(b)) if i != index]
+<     a.insert(index, 1.0 / b[index])
+---
+>     a = ((-b[i] / b[index]) for i in range(len(b)) when i != index)
+>     a.splice(index, 0, 1.0 / b[index])
+174,175c171,172
+<     y = [i.value for i in v]
+<     fy = [i.GetMessage(this) for i in v]
+---
+>     y = (i.value for i in v)
+>     fy = (i.GetMessage(this) for i in v)
+193,195c190,192
+<     args = (d / sqrt_c, @epsilon * sqrt_c)
+<     V = @V(*args)
+<     W = @W(*args)
+---
+>     args = [d / sqrt_c, @epsilon * sqrt_c]
+>     V = @V.apply(@V,Array.prototype.slice.call(arguments, 0))
+>     W = @W.apply(@W,Array.prototype.slice.call(arguments, 0))
+205a203,205
+> BETA = null
+> EPSILON = null
+> GAMMA = null
+229d228
+<   global BETA, EPSILON, GAMMA
+260c259
+<   players.sort(key=lambda p: p.rank)
+---
+>   players.sort((p)->p.rank)
+265,268c264,267
+<   ss = [new Variable() for p in players]
+<   ps = [new Variable() for p in players]
+<   ts = [new Variable() for p in players]
+<   ds = [new Variable() for p in players.slice(0,-1)]
+---
+>   ss = (new Variable() for p in players)
+>   ps = (new Variable() for p in players)
+>   ts = (new Variable() for p in players)
+>   ds = (new Variable() for p in players.slice(0,-1))
+271,274c270,273
+<   skill = [new PriorFactor(s, new Gaussian({"mu":pl.skill[0], "sigma":pl.skill[1] + GAMMA})) for (s, pl) in zip(ss, players)]
+<   skill_to_perf = [new LikelihoodFactor(s, p, pow(BETA,2)) for (s, p) in zip(ss, ps)]
+<   perf_to_team = [new SumFactor(t, [p], [1]) for (p, t) in zip(ps, ts)]
+<   team_diff = [new SumFactor(d, [t1, t2], [+1, -1]) for (d, t1, t2) in zip(ds, ts.slice(0,-1), ts.slice(1))]
+---
+>   skill = (new PriorFactor(i.s, new Gaussian({"mu":i.pl.skill[0], "sigma":i.pl.skill[1] + GAMMA})) for i in zip({s:ss, pl:players}))
+>   skill_to_perf = (new LikelihoodFactor(i.s, i.p, pow(BETA,2)) for i in zip({s:ss, p:ps}))
+>   perf_to_team = (new SumFactor(i.t, [i.p], [1]) for i in zip({p:ps, t:ts}))
+>   team_diff = (new SumFactor(i.d, [i.t1, i.t2], [+1, -1]) for i in zip({d:ds, t1:ts.slice(0,-1), t2:ts.slice(1)}))
+277c276
+<   trunc = [new TruncateFactor(d, Vdraw if pl1.rank == pl2.rank else Vwin, Wdraw if pl1.rank == pl2.rank else Wwin, EPSILON) for (d, pl1, pl2) in zip(ds, players.slice(0,-1), players.slice(1))]
+---
+>   trunc = (new TruncateFactor(i.d, (if i.pl1.rank == i.pl2.rank then Vdraw else Vwin), (if i.pl1.rank == i.pl2.rank then Wdraw else Wwin), EPSILON) for i in zip({d:ds, pl1:players.slice(0,-1), pl2:players.slice(1)}))
+309,311c308,316
+<   for s, pl in zip(ss, players)
+<     pl.skill = s.value.MuSigma()
+< __all__ = ["AdjustPlayers", "SetParameters", "INITIAL_MU", "INITIAL_SIGMA"]
+\ No newline at end of file
+---
+>   for i in zip({s:ss, pl:players})
+>     i.pl.skill = i.s.value.MuSigma()
+>   return
+> 
+> #export methods
+> exports.AdjustPlayers= AdjustPlayers
+> exports.SetParameters = SetParameters
+> exports.SetInitialMu = (val)->INITIAL_MU=val
+> exports.SetInitialSigma = (val)->INITIAL_SIGMA=val

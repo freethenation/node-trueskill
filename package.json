@@ -1,0 +1,9 @@
+{
+    "name": "3dmainia",
+    "version": "0.0.1",
+    "private": true,
+    "dependencies": {
+        "gaussian": "1.0.0"
+    },
+    "author": "Richard Klafter <rpklafter@yahoo.com>"
+}

@@ -181,12 +181,10 @@ class SumFactor(Factor):
     self.coeffs = coeffs
     super(SumFactor, self).__init__([sum_variable] + terms_variables)
 
-  def _InternalUpdate(self, var, y, fy, a):
+  def _InternalUpdate(self, variable, y, fy, a):
     new_pi = 1.0 / (sum(pow(a[j],2) / (y[j].pi - fy[j].pi) for j in range(len(a))))
-    new_tau = new_pi * sum(a[j] *
-                           (y[j].tau - fy[j].tau) / (y[j].pi - fy[j].pi)
-                           for j in range(len(a)))
-    var.UpdateMessage(self, Gaussian({"pi":new_pi, "tau":new_tau}))
+    new_tau = new_pi * sum(a[j] * (y[j].tau - fy[j].tau) / (y[j].pi - fy[j].pi) for j in range(len(a)))
+    variable.UpdateMessage(self, Gaussian({"pi":new_pi, "tau":new_tau}))
 
   def UpdateSum(self):
     """ Update the sum value ("down" in the factor graph). """
@@ -258,8 +256,7 @@ def DrawMargin(p, beta, total_players=2):
 INITIAL_MU = 25.0
 INITIAL_SIGMA = INITIAL_MU / 3.0
 
-def SetParameters(beta=None, epsilon=None, draw_probability=None,
-                  gamma=None):
+def SetParameters(beta=None, epsilon=None, draw_probability=None, gamma=None):
   """
   Sets three global parameters used in the TrueSkill algorithm.
 
@@ -338,18 +335,13 @@ def AdjustPlayers(players):
 
   # Create each layer of factor nodes.  At the top we have priors
   # initialized to the player's current skill estimate.
-  skill = [PriorFactor(s, Gaussian({"mu":pl.skill[0], "sigma":pl.skill[1] + GAMMA}))
-           for (s, pl) in zip(ss, players)]
+  skill = [PriorFactor(s, Gaussian({"mu":pl.skill[0], "sigma":pl.skill[1] + GAMMA})) for (s, pl) in zip(ss, players)]
   skill_to_perf = [LikelihoodFactor(s, p, pow(BETA,2)) for (s, p) in zip(ss, ps)]
   perf_to_team = [SumFactor(t, [p], [1]) for (p, t) in zip(ps, ts)]
   team_diff = [SumFactor(d, [t1, t2], [+1, -1]) for (d, t1, t2) in zip(ds, ts[:-1], ts[1:])]
   # At the bottom we connect adjacent teams with a 'win' or 'draw'
   # factor, as determined by the rank values.
-  trunc = [TruncateFactor(d,
-                          Vdraw if pl1.rank == pl2.rank else Vwin,
-                          Wdraw if pl1.rank == pl2.rank else Wwin,
-                          EPSILON)
-           for (d, pl1, pl2) in zip(ds, players[:-1], players[1:])]
+  trunc = [TruncateFactor(d, Vdraw if pl1.rank == pl2.rank else Vwin, Wdraw if pl1.rank == pl2.rank else Wwin, EPSILON) for (d, pl1, pl2) in zip(ds, players[:-1], players[1:])]
 
   # Start evaluating the graph by pushing messages 'down' from the
   # priors.
