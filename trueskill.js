@@ -2,7 +2,7 @@
 (function() {
   var gaussian, playerSkillToGuassian, portedTrueskill;
 
-  gaussian = require("./gaussian");
+  gaussian = require("free-gaussian");
 
   portedTrueskill = require("./portedTrueskill");
 

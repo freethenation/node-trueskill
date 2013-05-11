@@ -41,7 +41,7 @@ darren.rank = 4
 
 // Do the computation to find each player's new skill estimate.
 
-trueskill = require("trueskill");
+trueskill = require("./trueskill");
 trueskill.AdjustPlayers([alice, bob, chris, darren]);
 
 // Print the results.

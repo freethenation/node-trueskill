@@ -26,11 +26,11 @@ genId=(()->
   ()->currId++; return currId
 )()
 #start of original code
-norm = require("gaussian")
+norm = require("free-gaussian")
 norm = norm(0,1)
-pdf = norm.pdf
-cdf = norm.cdf
-icdf = norm.ppf    # inverse CDF
+pdf = ()->norm.pdf.apply(norm, arguments)
+cdf = ()->norm.cdf.apply(norm, arguments)
+icdf = ()->norm.ppf.apply(norm, arguments)    # inverse CDF
 # Update rules for approximate marginals for the win and draw cases,
 # respectively.
 Vwin=(t, e)->

@@ -1,9 +1,9 @@
-gaussian = require "./gaussian"
+gaussian = require "free-gaussian"
 portedTrueskill = require "./portedTrueskill"
 
 module.exports = portedTrueskill
 
-playerSkillToGuassian = (player)->new gaussian(player[0], player[1])
+playerSkillToGuassian = (player)->gaussian(player[0], player[1])
 
 module.exports.ChanceOfWinning = (player1, player2)->
   """The chance that trueskill assigns to player1 winning vs player2"""

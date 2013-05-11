@@ -96,15 +96,21 @@ Implements the player skill estimation algorithm from Herbrich et al.,
     };
   })();
 
-  norm = require("gaussian");
+  norm = require("free-gaussian");
 
   norm = norm(0, 1);
 
-  pdf = norm.pdf;
+  pdf = function() {
+    return norm.pdf.apply(norm, arguments);
+  };
 
-  cdf = norm.cdf;
+  cdf = function() {
+    return norm.cdf.apply(norm, arguments);
+  };
 
-  icdf = norm.ppf;
+  icdf = function() {
+    return norm.ppf.apply(norm, arguments);
+  };
 
   Vwin = function(t, e) {
     return pdf(t - e) / cdf(t - e);
