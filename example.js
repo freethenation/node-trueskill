@@ -34,10 +34,10 @@ darren.skill = [25.0, 25.0/3.0]
 // (23, 45, 45, 67).  All that matters is that a smaller rank beats a
 // larger one, and equal ranks indicate draws.
 
-alice.rank = 1
+alice.rank = 4
 bob.rank = 2
-chris.rank = 2
-darren.rank = 4
+chris.rank = 5
+darren.rank = 1
 
 // Do the computation to find each player's new skill estimate.
 
