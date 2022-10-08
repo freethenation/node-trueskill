@@ -181,7 +181,7 @@ function playGame(gameName) {
 
 //Now play all the games in the game object.
 for (const game in games) {
-    if (game.includes('game')) {
+    if (game.includes('game') && games[game].kind === 'HJ') {
        playGame(games[game]);
     }
 }
