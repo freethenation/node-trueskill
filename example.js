@@ -28,16 +28,21 @@ chris.skill = [25.0, 25.0/3.0]
 darren = {}
 darren.skill = [25.0, 25.0/3.0]
 
+function consScore (player) {
+    return player.skill[0] - (player.skill[1] * 3);
+}
+
 // The four players play a game.  Alice wins, Bob and Chris tie for
 // second, Darren comes in last.  The actual numerical values of the
 // ranks don't matter, they could be (1, 2, 2, 4) or (1, 2, 2, 3) or
 // (23, 45, 45, 67).  All that matters is that a smaller rank beats a
 // larger one, and equal ranks indicate draws.
 
-alice.rank = 1
+
+alice.rank = 4
 bob.rank = 2
-chris.rank = 2
-darren.rank = 4
+chris.rank = 5
+darren.rank = 1
 
 // Do the computation to find each player's new skill estimate.
 
@@ -46,11 +51,69 @@ trueskill.AdjustPlayers([alice, bob, chris, darren]);
 
 // Print the results.
 
-console.log("alice:");
-console.log(alice.skill);
-console.log("bob:");
-console.log(bob.skill);
-console.log("chris:");
-console.log(chris.skill);
-console.log("darren:");
-console.log(darren.skill);
+console.log("alice: [ rank", alice.rank, ']', alice.skill, consScore(alice));
+console.log("bob: [ rank", bob.rank, ']', bob.skill, consScore(bob));
+console.log("chris: [ rank", chris.rank, ']', chris.skill, consScore(chris));
+console.log("darren: [ rank", darren.rank, ']', darren.skill, consScore(darren));
+console.log('-----------------------')
+
+
+alice.rank = 4
+bob.rank = 2
+chris.rank = 5
+darren.rank = 1
+
+// Do the computation to find each player's new skill estimate.
+
+trueskill = require("./trueskill");
+trueskill.AdjustPlayers([alice, bob, chris, darren]);
+
+// Print the results.
+
+console.log("alice: [ rank", alice.rank, ']', alice.skill, consScore(alice));
+console.log("bob: [ rank", bob.rank, ']', bob.skill, consScore(bob));
+console.log("chris: [ rank", chris.rank, ']', chris.skill, consScore(chris));
+console.log("darren: [ rank", darren.rank, ']', darren.skill, consScore(darren));
+console.log('-----------------------')
+
+
+alice.rank = 4
+bob.rank = 6
+chris.rank = 5
+darren.rank = 1
+
+// Do the computation to find each player's new skill estimate.
+
+trueskill = require("./trueskill");
+trueskill.AdjustPlayers([alice, bob, chris, darren]);
+
+// Print the results.
+
+console.log("alice: [ rank", alice.rank, ']', alice.skill, consScore(alice));
+console.log("bob: [ rank", bob.rank, ']', bob.skill, consScore(bob));
+console.log("chris: [ rank", chris.rank, ']', chris.skill, consScore(chris));
+console.log("darren: [ rank", darren.rank, ']', darren.skill, consScore(darren));
+console.log('-----------------------')
+
+
+alice.rank = 4
+bob.rank = 2
+chris.rank = 5
+darren.rank = 9
+
+// Do the computation to find each player's new skill estimate.
+
+trueskill = require("./trueskill");
+trueskill.AdjustPlayers([alice, bob, chris, darren]);
+
+// Print the results.
+
+console.log("alice: [ rank", alice.rank, ']', alice.skill, consScore(alice));
+console.log("bob: [ rank", bob.rank, ']', bob.skill, consScore(bob));
+console.log("chris: [ rank", chris.rank, ']', chris.skill, consScore(chris));
+console.log("darren: [ rank", darren.rank, ']', darren.skill, consScore(darren));
+console.log('-----------------------')
+
+
+
+
